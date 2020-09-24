@@ -7,7 +7,7 @@ from typing import List
 
 # разбирает аргументы командной строки
 def parse_arguments(arguments: List[str]) -> argparse.Namespace:
-    default_charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.,!?:;()"
+    
     parser = argparse.ArgumentParser(allow_abbrev=False)
     parser.add_argument("data_len", type=int, help="количество генерируемых данных: чисел или букв")
     parser.add_argument("output_path", nargs='?', help="файл, в который сохранять вывод")
@@ -18,28 +18,10 @@ def parse_arguments(arguments: List[str]) -> argparse.Namespace:
     parser.add_argument("-std", type=float, help="стандартное отклонение распределения")
     parser.add_argument("-min_value", "-min",type=float, help="нижняя граница распределения")
     parser.add_argument("-max_value", "-max", type=float, help="верхняя граница распределения")
-    parser.add_argument("-charset", "-c", default=default_charset, help="набор символов, из которых берутся символы для генерации")
+    parser.add_argument("-charset", "-c", help="набор символов, из которых берутся символы для генерации")
     parser.add_argument("--timeit", action="store_true", help="если указан, то замеряет и выводит в консоль время работы")
     args = parser.parse_args(arguments)
     return args
-
-# найти последнее вхождение символа в строку
-# возвращает -1, если символа нет
-def find_last_of(string: str, symbol: str) -> int:
-    i = len(string) - 1
-    while(i>=0 and string[i]!=symbol):
-        i-=1
-    return i
-
-# по пути к файлу получить путь к содержащей его папке
-def get_path_to_containing_folder(file_path: str) -> str:
-    i = find_last_of(file_path, "\\")
-    if i == -1:
-        i = find_last_of(file_path, "/")
-    if i == -1:
-        return '.'
-    else:
-        return file_path[:i]
 
 # проверяет на корректность аргументы командной строки
 # ничего не возвращает, но кидает исключение при ошибке
@@ -47,7 +29,7 @@ def get_path_to_containing_folder(file_path: str) -> str:
 def validate_arguments(parsed_arguments: argparse.Namespace):
     # проверка существования папки для выходного файла, если он указан
     if parsed_arguments.output_path is not None:
-        output_folder = get_path_to_containing_folder(os.path.normpath(parsed_arguments.output_path))
+        output_folder = os.path.dirname(os.path.normpath(parsed_arguments.output_path))
         if not os.path.isdir(output_folder):
             raise ValueError("Folder " + output_folder + " doesn't exist")
 
@@ -57,8 +39,8 @@ def validate_arguments(parsed_arguments: argparse.Namespace):
         raise ValueError( "'str' data type incompatible with -distribution argument")
     if parsed_arguments.type in ["int", "float"] and parsed_arguments.distribution is None:
         raise ValueError( "Need -distribution argument to generate types 'int' and 'float' data")
-    # if parsed_arguments.type != "str" and parsed_arguments.charset is not None:
-    #     raise ValueError("-charset arguments is only compatible with 'str' data type")
+    if parsed_arguments.type != "str" and parsed_arguments.charset is not None:
+        raise ValueError("-charset argument is only compatible with 'str' data type")
 
     # проверка параметров, зависящих от распределения
     if parsed_arguments.distribution == "normal":
